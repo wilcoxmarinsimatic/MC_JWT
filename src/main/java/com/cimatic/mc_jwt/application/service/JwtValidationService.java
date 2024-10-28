@@ -1,8 +1,6 @@
 package com.cimatic.mc_jwt.application.service;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -14,9 +12,6 @@ import com.cimatic.mc_jwt.infrastructure.configuration.RabbitMQConfig;
 
 @Service
 public class JwtValidationService {
-
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
 
     private final JwtTokenOutRepository jwtTokenRepository;
 
@@ -68,7 +63,7 @@ public class JwtValidationService {
         response.put("correlationId", request.getCorrelationId());
         response.put("valid", false);
         response.put("token", request.getToken());
-        response.put("user", user);
+        response.put("username", user);
 
         return response;
     }
