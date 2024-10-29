@@ -10,6 +10,8 @@ import com.cimatic.mc_jwt.application.port.out.JwtTokenOutRepository;
 import com.cimatic.mc_jwt.domain.JwtRequest;
 import com.cimatic.mc_jwt.infrastructure.configuration.RabbitMQConfig;
 
+import io.jsonwebtoken.ExpiredJwtException;
+
 @Service
 public class JwtValidationService {
 
@@ -27,6 +29,8 @@ public class JwtValidationService {
             boolean isValid = jwtTokenRepository.validateToken(request.getToken(), request.getUsername());
             response.put("valid", isValid);
         } catch (IllegalArgumentException e) {
+            response.put("valid", false);
+        }catch (ExpiredJwtException e) {
             response.put("valid", false);
         }
         return response;
@@ -70,7 +74,14 @@ public class JwtValidationService {
 
     @RabbitListener(queues = RabbitMQConfig.JWT_REVOKE_QUEUE)
     public void revokeJwtToken(JwtRequest request) {
-        jwtTokenRepository.addToBlackList(request.getReason(), request.getToken());
+        try {
+            jwtTokenRepository.addToBlackList(request.getReason(), request.getToken());
+        } catch (IllegalArgumentException e) {
+            System.out.println("error");
+        }catch (ExpiredJwtException e) {
+            System.out.println("token expiro");
+        }
+        
     }
 
 }
