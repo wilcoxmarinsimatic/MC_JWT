@@ -38,36 +38,60 @@ public class JwtValidationService {
 
     @RabbitListener(queues = RabbitMQConfig.JWT_GENERATE_QUEUE)
     public Map<String, Object> generateJwtToken(JwtRequest request) {
-        System.out.println(request.getUsername());
-        String token = jwtTokenRepository.generateAndSaveToken(request.getUsername());
-        // Enviar la respuesta asincrónica a la cola de respuesta
         Map<String, Object> response = new HashMap<>();
         response.put("correlationId", request.getCorrelationId());
-        response.put("valid", false);
-        response.put("token", token);
+        try {
+            String token = jwtTokenRepository.generateAndSaveToken(request.getUsername());
+            response.put("valid", true);
+            response.put("token", token);
+        } catch (IllegalArgumentException e) {
+            response.put("valid", false);
+            response.put("token", "");
+        } catch (ExpiredJwtException e) {
+            response.put("valid", false);
+            response.put("token", "");
+        }
         return response;
     }
 
     @RabbitListener(queues = RabbitMQConfig.JWT_EXPIRED_QUEUE)
     public Map<String, Object> expiredJwtToken(JwtRequest request) {
-        Boolean expired = jwtTokenRepository.isTokenExpired(request.getToken());
-        // Enviar la respuesta asincrónica a la cola de respuesta
         Map<String, Object> response = new HashMap<>();
         response.put("correlationId", request.getCorrelationId());
-        response.put("valid", expired);
-        response.put("token", request.getToken());
+        try {
+            Boolean expired = jwtTokenRepository.isTokenExpired(request.getToken());
+            response.put("valid", expired);
+            response.put("token", request.getToken());
+        } catch (IllegalArgumentException e) {
+            response.put("valid", true);
+            response.put("token", request.getToken());
+        }catch (ExpiredJwtException e) {
+            response.put("valid", true);
+            response.put("token", request.getToken());
+        }
+        
         return response;
     }
 
     @RabbitListener(queues = RabbitMQConfig.JWT_SUBJECT_QUEUE)
     public Map<String, Object> subjectJwtToken(JwtRequest request) {
-        String user = jwtTokenRepository.getEmail(request.getToken());
-        // Enviar la respuesta asincrónica a la cola de respuesta
         Map<String, Object> response = new HashMap<>();
         response.put("correlationId", request.getCorrelationId());
-        response.put("valid", false);
-        response.put("token", request.getToken());
-        response.put("username", user);
+
+        try {
+            String user = jwtTokenRepository.getEmail(request.getToken());
+            response.put("valid", true);
+            response.put("token", request.getToken());
+            response.put("username", user);
+        } catch (IllegalArgumentException e) {
+            response.put("valid", false);
+            response.put("token", request.getToken());
+            response.put("username", "");
+        }catch (ExpiredJwtException e) {
+            response.put("valid", false);
+            response.put("token", request.getToken());
+            response.put("username", "");
+        }
 
         return response;
     }
